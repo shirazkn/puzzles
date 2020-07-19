@@ -3,11 +3,22 @@ import numpy as np
 
 """
 A quick low-res animation can be rendered using: `manim animations.py GridScene -pl` from command line
-File is saved in the working directory, in ./media/
+Useful flags:
+-s : Skip to last frame
+-p : Preview (Opens the video when done)
+-l : Low-res rendering
+ 
+File is saved in the working directory, in `./media/`
+(I think) `--media-dir` flag can be used for changing export directory.
 """
 
 CELL_SIZE = 2  # Don't change this, something's not right. It works with 2.
+LINE_WIDTH_MULTIPLE = 0.001  # Seems fairly well suited for 100x100
+
 ANIMATION_SPEED = 0.2
+GRID_SIZE_HORIZONTAL = 50
+GRID_SIZE_VERTICAL = 50
+
 
 class GridScene(man.Scene):
     def __init__(self, *args, **kwargs):
@@ -22,7 +33,7 @@ class GridScene(man.Scene):
         """
         Is the 'main' function called by Manim first
         """
-        self.set_grid_size(5, 5)
+        self.set_grid_size(GRID_SIZE_HORIZONTAL, GRID_SIZE_VERTICAL)
         self.resize_camera()
         self.create_empty_grid()
 
@@ -30,8 +41,8 @@ class GridScene(man.Scene):
             # Example of how game of life animation works...
             self.example_game()
 
-        # Fade out
-        self.play(man.FadeOut(self.all_cells))
+        # Fade out (Removed cus it takes too long)
+        # self.play(man.FadeOut(self.all_cells))
 
     def flip_cell(self, i, j):
         """
@@ -59,6 +70,7 @@ class GridScene(man.Scene):
         self.camera.set_frame_height(self.m * CELL_SIZE + CELL_SIZE)
         self.camera.set_frame_width(self.n * CELL_SIZE + CELL_SIZE)
         self.camera.resize_frame_shape(fixed_dimension=1)
+        self.camera.cairo_line_width_multiple = LINE_WIDTH_MULTIPLE
 
     def create_empty_grid(self):
         self.all_cells = man.VGroup()
@@ -74,7 +86,7 @@ class GridScene(man.Scene):
                 self.grid_status[-1].append(0)
                 self.all_cells.add(self.grid[-1][-1])
 
-        self.play(man.FadeIn(self.all_cells))
+        self.play(man.ShowCreation(self.all_cells))
 
     def example_game(self):
         """
