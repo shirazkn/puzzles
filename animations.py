@@ -15,25 +15,24 @@ File is saved in the working directory, in `./media/`
 CELL_SIZE = 2  # Don't change this, something's not right. It works with 2.
 LINE_WIDTH_MULTIPLE = 0.001  # Seems fairly well suited for 100x100
 
-ANIMATION_SPEED = 0.2
-GRID_SIZE_HORIZONTAL = 50
-GRID_SIZE_VERTICAL = 50
+ANIMATION_SPEED = 0.2  # Lower is faster.
+GRID_SIZE_VERTICAL = 20
+GRID_SIZE_HORIZONTAL = 20
+DIAGONAL_LINE = np.array([1, 1, 0])
 
 
 class GridScene(man.Scene):
     def __init__(self, *args, **kwargs):
-        self.m = None  # Vertical axis
-        self.n = None  # Horizontal axis
+        self.m = None  # Vertical length
+        self.n = None  # Horizontal length
         self.grid = []  # 2D list of cells (as VMObjects)
-        self.grid_status = []  # Keeps track of whether a cell is on or off
-        self.all_cells = None  # Group which contain all VMObjects
         super(GridScene, self).__init__(*args, **kwargs)
 
     def construct(self):
         """
         Is the 'main' function called by Manim first
         """
-        self.set_grid_size(GRID_SIZE_HORIZONTAL, GRID_SIZE_VERTICAL)
+        self.set_grid_size(GRID_SIZE_VERTICAL, GRID_SIZE_HORIZONTAL)
         self.resize_camera()
         self.create_empty_grid()
 
@@ -41,22 +40,23 @@ class GridScene(man.Scene):
             # Example of how game of life animation works...
             self.example_game()
 
-        # Fade out (Removed cus it takes too long)
-        # self.play(man.FadeOut(self.all_cells))
-
     def flip_cell(self, i, j):
         """
         Flips a cell
         :param i, j: coordinates of cell, int
         :return: Transform object instance, to be fed into `play` function
         """
-        new_opacity = 0 if self.grid_status[i][j] else 1
-        new_cell = man.Rectangle(height=CELL_SIZE, width=CELL_SIZE)
-        new_cell.set_fill(man.COLOR_MAP["RED_C"], opacity=new_opacity)
-        new_cell.shift(man.RIGHT*CELL_SIZE*j + man.UP*CELL_SIZE*i)
+        if self.grid[i][j]:
+            animation = man.FadeOut(self.grid[i][j], run_time=ANIMATION_SPEED)
+            self.grid[i][j] = None
 
-        self.grid_status[i][j] = (self.grid_status[i][j] + 1) % 2
-        return man.Transform(self.grid[i][j], new_cell, run_time=ANIMATION_SPEED)
+        else:
+            self.grid[i][j] = man.Rectangle(height=CELL_SIZE, width=CELL_SIZE)
+            self.grid[i][j].set_fill(man.COLOR_MAP["RED_C"], opacity=1.0)
+            self.grid[i][j].shift(man.RIGHT*CELL_SIZE*j + man.UP*CELL_SIZE*i + 0.5*CELL_SIZE*DIAGONAL_LINE)
+            animation = man.ShowCreation(self.grid[i][j], run_time=ANIMATION_SPEED)
+
+        return animation
 
     def set_grid_size(self, _m, _n):
         self.m = _m
@@ -64,29 +64,27 @@ class GridScene(man.Scene):
 
     def resize_camera(self):
         """
-        Keemps thimgs in d frame :-)
+        Keeps things within the frame (retaining aspect ratio)
         """
-        self.camera.set_frame_center(np.array([self.n * CELL_SIZE * 0.5 - 1, self.m * CELL_SIZE * 0.5 - 1, 0.0]))
-        self.camera.set_frame_height(self.m * CELL_SIZE + CELL_SIZE)
-        self.camera.set_frame_width(self.n * CELL_SIZE + CELL_SIZE)
-        self.camera.resize_frame_shape(fixed_dimension=1)
+        self.camera.set_frame_center(np.array([self.n*CELL_SIZE*0.5, self.m*CELL_SIZE*0.5, 0.0]))
+        self.camera.set_frame_height(self.m * CELL_SIZE + 2*CELL_SIZE)
+        self.camera.set_frame_width(self.n * CELL_SIZE + 2*CELL_SIZE)
+        self.camera.resize_frame_shape(fixed_dimension=(1.78*self.m > self.n))
         self.camera.cairo_line_width_multiple = LINE_WIDTH_MULTIPLE
 
     def create_empty_grid(self):
-        self.all_cells = man.VGroup()
-
         for i in range(self.m):
-            self.grid.append([])
-            self.grid_status.append([])
+            self.grid.append([None for _ in range(self.n)])
 
-            for j in range(self.n):
-                self.grid[-1].append(man.Rectangle(height=CELL_SIZE, width=CELL_SIZE))
-                self.grid[-1][-1].shift(man.RIGHT*CELL_SIZE*j + man.UP*CELL_SIZE*i)
+        all_lines = man.VGroup()
+        for i in range(self.m + 1):
+            all_lines.add(man.Line([0, i*CELL_SIZE, 0], [self.n*CELL_SIZE, i*CELL_SIZE, 0], color=man.COLOR_MAP["WHITE"]))
 
-                self.grid_status[-1].append(0)
-                self.all_cells.add(self.grid[-1][-1])
+        for i in range(self.n + 1):
+            all_lines.add(man.Line([i*CELL_SIZE, 0, 0], [i*CELL_SIZE, self.m*CELL_SIZE, 0], color=man.COLOR_MAP["WHITE"]))
 
-        self.play(man.ShowCreation(self.all_cells))
+        self.add(all_lines)
+        self.wait(ANIMATION_SPEED*2)
 
     def example_game(self):
         """
@@ -103,8 +101,8 @@ class GridScene(man.Scene):
 
         # Similarly, in the next iteration
         animations = []
-        animations.append(self.flip_cell(2, 2))
-        animations.append(self.flip_cell(2, 1))
+        animations.append(self.flip_cell(5, 6))
+        animations.append(self.flip_cell(6, 7))
         self.play(*animations)
 
         # The * unpacks the list as if they're separate arguments...
