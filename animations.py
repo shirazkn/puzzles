@@ -4,7 +4,7 @@ import numpy as np
 """
 A quick low-res animation can be rendered using: `manim animations.py GridScene -pl` from command line
 Useful flags:
--s : Skip to last frame
+-s : Skip to last frame (Exports a png)
 -p : Preview (Opens the video when done)
 -l : Low-res rendering
  
@@ -12,8 +12,8 @@ File is saved in the working directory, in `./media/`
 (I think) `--media-dir` flag can be used for changing export directory.
 """
 
-CELL_SIZE = 2  # Don't change this, something's not right. It works with 2.
-LINE_WIDTH_MULTIPLE = 0.001  # Seems fairly well suited for 100x100
+CELL_SIZE = 2
+LINE_WIDTH_MULTIPLE = 0.001  # Seems fairly well suited for 10x10 to 500x500
 
 ANIMATION_SPEED = 0.2  # Lower is faster.
 GRID_SIZE_VERTICAL = 20
